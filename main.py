@@ -1,4 +1,3 @@
-```python
 import subprocess
 import tempfile
 import math
@@ -6,7 +5,9 @@ import json
 import sys
 import cv2
 import os
-from faster_whisper import WhisperModel  # Import WhisperModel from faster-whisper
+
+# Import faster-whisper in the specified format
+from faster_whisper import WhisperModel
 
 video_file = sys.argv[1]
 
@@ -37,31 +38,14 @@ def write_text(text, frame):
     border = 5
     margin = 18
 
-    # TODO: center multi line text properly
-    text_y = (frame.shape[0]) // 2  # Center vertically
+    # Center multi-line text properly
+    lines = text.splitlines()
+    total_height = sum(cv2.getTextSize(line, font, font_scale, thickness)[0][1] for line in lines)
+    text_y = (frame.shape[0] - total_height - (len(lines) - 1) * margin) // 2  # Center vertically
 
-    line_to_draw = None
-    line = ""
-    words = text.split()
-    word_index = 0
-    while word_index < len(words):
-        word = words[word_index]
-        line += word + " "
-        text_size = cv2.getTextSize(line.strip(), font, font_scale, thickness)[0]
-        text_width = text_size[0]
-
-        if text_width > frame.shape[1]:
-            if line_to_draw:
-                frame = write_line(line_to_draw, frame, text_y, font, font_scale, white_color, black_color, thickness, border)
-                line_to_draw = None
-            text_y += text_size[1] + margin
-            line = ""
-        else:
-            line_to_draw = line.strip()
-            word_index += 1
-
-    if line_to_draw:
-        frame = write_line(line_to_draw, frame, text_y, font, font_scale, white_color, black_color, thickness, border)
+    for line in lines:
+        frame = write_line(line, frame, text_y, font, font_scale, white_color, black_color, thickness, border)
+        text_y += cv2.getTextSize(line, font, font_scale, thickness)[0][1] + margin
 
     return frame
 
@@ -79,13 +63,14 @@ def main():
         temp_audio_file
     ])
 
-    # Load the faster-whisper model (specify the desired model size)
-    model = WhisperModel("base", device="cpu")  # Using CPU and the "base" model
+    # Load faster-whisper model (replace "base" with desired model size)
+    model = WhisperModel("base")  # Using the specified format
 
+    # Transcribe the audio (adjust parameters as needed)
     transcription = model.transcribe(
         audio=temp_audio_file,
         word_timestamps=True,
-        fp16=False,  # Set fp16=False for CPU usage
+        fp16=False,  # Set to True if you have a GPU
     )
 
     segments = transcription["segments"]
@@ -130,14 +115,14 @@ def main():
         '-y',
         '-i', temp_video_file,
         '-i', temp_audio_file,
-        '-map', '0:v',   # Map video from the first input
-        '-map', '1:a',   # Map audio from the second input
+        '-map', '0:v',  # Map video from the first input
+        '-map', '1:a',  # Map audio from the second input
         '-c:v', 'copy',  # Copy video codec
-        '-c:a', 'aac',   # AAC audio codec
+        '-c:a', 'aac',  # AAC audio codec
         '-strict', 'experimental',
         output_file
     ])
 
 
 if __name__ == "__main__":
-    main()```
+    main()
