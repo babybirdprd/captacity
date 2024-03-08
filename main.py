@@ -1,11 +1,12 @@
+```python
 import subprocess
 import tempfile
-import whisper
 import math
 import json
 import sys
 import cv2
 import os
+from faster_whisper import WhisperModel  # Import WhisperModel from faster-whisper
 
 video_file = sys.argv[1]
 
@@ -13,6 +14,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 output_file = os.path.join(current_dir, "with_transcript.avi")
 temp_video_file = tempfile.NamedTemporaryFile(suffix=".avi").name
 temp_audio_file = tempfile.NamedTemporaryFile(suffix=".wav").name
+
 
 def write_line(text, frame, text_y, font, font_scale, white_color, black_color, thickness, border):
     # Calculate the position for centered text
@@ -24,6 +26,7 @@ def write_line(text, frame, text_y, font, font_scale, white_color, black_color, 
     frame = cv2.putText(frame, text, org, font, font_scale, white_color, thickness, cv2.LINE_AA)
 
     return frame
+
 
 def write_text(text, frame):
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -62,8 +65,10 @@ def write_text(text, frame):
 
     return frame
 
+
 def ffmpeg(command):
     return subprocess.run(command, capture_output=True)
+
 
 def main():
     # Extract audio from video
@@ -74,12 +79,13 @@ def main():
         temp_audio_file
     ])
 
-    model = whisper.load_model("base")
+    # Load the faster-whisper model (specify the desired model size)
+    model = WhisperModel("base", device="cpu")  # Using CPU and the "base" model
 
     transcription = model.transcribe(
         audio=temp_audio_file,
         word_timestamps=True,
-        fp16=False,
+        fp16=False,  # Set fp16=False for CPU usage
     )
 
     segments = transcription["segments"]
@@ -110,7 +116,7 @@ def main():
         frame = write_text(text_to_use, frame)
         out.write(frame)
 
-        time += 1/framerate
+        time += 1 / framerate
 
     # Release the VideoCapture and VideoWriter objects
     cap.release()
@@ -132,5 +138,6 @@ def main():
         output_file
     ])
 
+
 if __name__ == "__main__":
-    main()
+    main()```
