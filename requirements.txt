@@ -1,2 +1,2 @@
-faster_whisper
+faster-whisper
 opencv-python
